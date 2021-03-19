@@ -3,6 +3,7 @@ pub mod predicate;
 pub mod node;
 pub mod message;
 pub mod slot;
+pub mod topic;
 
 #[cfg(test)]
 mod tests {

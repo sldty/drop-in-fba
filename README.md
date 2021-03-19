@@ -9,12 +9,12 @@ This is a general-purpose library that ~~implements~~ *will implement*⁰ Stella
 
 > **0**: It's WIP. There's even a banner at the top of this README!
 
-It's loosely based on existing implementations¹ as well as the original technical papers. Not much literature exists on the subject, but I think that SCP - and FBA in general - is a great idea and could benefit from an easy-to-use library so more people can mess around with it and build stuff on it.
+this project is loosely based on existing implementations¹ as well as the original technical papers. Not much literature exists on the subject, but I think that SCP - and FBA in general - is a great idea and could benefit from an easy-to-use library so more people can mess around with it and build stuff on it.
 
 > **1:** All right, all right - it's *actually* just a simplified port of [bobg/scp (Golang)](https://github.com/bobg/scp) to Rust. Huge thanks to [Bob Glickstein](https://github.com/bobg) for the nice clean implementation!
 
 ## Why should you care?
-Imagine you have a huge bundle of computers, some working, others not, and you want to make sure they all reach the same shared state - but computers can only send messages between each other.
+Imagine you have a huge bundle of computers, some working, others not, and you want to make sure they all reach the same shared state - but here's the catch - the computers can only communicate by sending messages between each other.
 
 > This 'state' could be anything, really - could be values in a database cluster, transactions in a blockchain, filesystems, etc.
 
