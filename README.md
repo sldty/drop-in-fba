@@ -18,19 +18,21 @@ Imagine you have a huge bundle of computers, some working, others not, and you w
 
 > This 'state' could be anything, really - could be values in a database cluster, transactions in a blockchain, filesystems, etc.
 
-Synchronizing state in this message-passing manner is a bit tricky. So tricky, in fact, that is has a name: *The Byzantine Generals Problem* there's a whole class of problems (and solutions!) built around this premise. The reason many have worked on it is a simple one: we have a *massive* message-passing-centric communications network, and we like to hook computers up to it. Solutions to this problem - systems that are said to be *Byzantine Fault Tolerant* - have practical and useful implications.
+Synchronizing state in this message-passing manner is a bit tricky. So tricky, in fact, that it even has a name: *The Byzantine Generals Problem*. Lower-and-upper bounds have been proved for many arrangements of this problem, and much effort has gone into proving solutions for the problem, yet it still remains an active area of research.
+
+Why? The reason so many have researched solutions for it is a simple one: we have a *massive* message-passing-centric communications network (the internet), and we like to hook computers up to it. Solutions to this problem - systems that are said to be *Byzantine Fault Tolerant* - have practical and useful implications.
 
 Right now, there are generally two ways we solve this problem:
 
-1. If we own most of the computers and know about all of them before hand (like a company running a database cluster, perhaps), we can use a **PAXOS**-like system. This system is fast, but, this system assumes *centralization*: someone has to make a list of all the computers and make sure they all work together. This is the traditional **Byzantine Agreement (BA)** solution.
+1. If we own most of the computers and know about all of them before hand (like a company running a database cluster, perhaps), we can use a **PAXOS**-like system. This system is fast, but, this system assumes *centralization*: someone has to make a list of all the computers and ensure they all work together. This is the traditional centralized **Byzantine Agreement (BA)** solution.
 
-2. If we do *not* own most of the computers or don't know about all of them before-hand, we can use a *decentralized* solution, like Bitcoin's **Proof-of-Work (PoW)** or Ethereum's **Proof-of-Stake (PoS)** (supposedly, we'll see how 2.0 goes). However, these systems, in assuming zero trust, tend to be a waste of energy (PoW), slow (PoW & PoS), and expensive (PoW).
+2. If we do *not* own most of the computers or don't know about all of them before-hand, we can use a *decentralized* solution, like Bitcoin's **Proof-of-Work (PoW)** or Ethereum's **Proof-of-Stake (PoS)** (supposedly, we'll see how 2.0 goes). However, these systems, in assuming zero trust, tend to be a waste of energy (PoW), slow (PoW & PoS), or expensive (PoW).
 
 These aren't the only solutions, however.
 
-**Federated Byzantine Agreement (FBA)** generalizes Byzantine Agreement to distributed systems. We can have our cake and eat it too: FBA is as quick as a PAXOS-like system, but allows for open-membership and is completely decentralized. FBA is so efficient because it doesn't assume zero trust - rather, computers in the network choose a *subset* of all computers in the network to trust (a *Quorum Slice*), and by taking the transitive closure over a *Quorum Slice* with respect to a specific computer, we can generate a trusted subset of the network a *Quorum*, through which we can undergo fairly standard PAXOS-style voting to arrive at a shared state.
+**Federated Byzantine Agreement (FBA)** generalizes Byzantine Agreement to distributed systems. We can have our cake and eat it too: FBA is as quick as a PAXOS-like system, but allows for open-membership and is completely decentralized. FBA is efficient because it doesn't assume zero trust - rather, computers in the network choose a *subset* of all computers in the network to trust (a *Quorum Slice*), and by taking the transitive closure over this *Quorum Slice* with respect to a specific computer, we can generate a trusted subset of the network a *Quorum*, through which we can undergo fairly standard PAXOS-style voting to arrive at a shared state.
 
-The **Stellar Consensus Protocol (SCP)²** is a specific construction that fulfills FBA. If I were to write an analogy, SCP is to FBA as PAXOS is to BA. For proof that SCP works, look no further than [Stellar](https://stellar.org), a distributed transactions system (I don't dare dirty its good name with the word 'cryptocurrency' 😉).
+The **Stellar Consensus Protocol (SCP)²** is a specific construction that fulfills FBA. If I were to write an analogy, SCP is to FBA as PAXOS is to BA. For proof that SCP works, look no further than [Stellar](https://stellar.org), a distributed transactions system.
 
 > **2:** No, no, not *that* SCP.
 
