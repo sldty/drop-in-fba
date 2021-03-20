@@ -39,18 +39,17 @@ impl<T: Value> Quorum<T> {
         &self,
         messages:  &HashMap<NodeId, Message<T>>,
         predicate: Box<dyn Predicate<T> + 'a>,
-    ) -> (HashSet<NodeId>/*, Box<dyn Predicate<T> + 'a>*/) where T: 'a {
-        let (blocking, _) = Quorum::find_blocking_inner(
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+        return Quorum::find_blocking_inner(
             self.needed(),
             &self.members,
             messages,
             predicate,
             HashSet::new(),
         );
-        return blocking;
     }
 
-    // TODO: remove unnessary clones and boxing
+    // TODO: remove unnessary clones, dupes, and boxing
     // would also have to change the Predicate trait
 
     fn find_blocking_inner<'a>(

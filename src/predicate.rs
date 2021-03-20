@@ -4,19 +4,17 @@ use crate::{
     message::Message
 };
 
+/// A predicate is a condition we use to build up and narrow down stuff.
 pub trait Predicate<T: Value>: fmt::Debug {
     fn test<'s>(self: Box<Self>, message: &Message<T>)
         -> Option<Box<dyn Predicate<T> + 's>> where Self: 's;
+    /// Like clone but for traits
     fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's;
 }
 
-pub struct FnPredicate<T: Value>(fn(&Message<T>) -> bool);
+// Function predicate
 
-impl<T: Value> Clone for FnPredicate<T> {
-    fn clone(&self) -> Self {
-        FnPredicate(self.0)
-    }
-}
+pub struct FnPredicate<T: Value>(fn(&Message<T>) -> bool);
 
 impl<T: Value> Predicate<T> for FnPredicate<T> {
     fn test<'s>(self: Box<Self>, message: &Message<T>)
@@ -30,6 +28,12 @@ impl<T: Value> Predicate<T> for FnPredicate<T> {
     }
 
     fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
+}
+
+impl<T: Value> Clone for FnPredicate<T> {
+    fn clone(&self) -> Self {
+        FnPredicate(self.0)
+    }
 }
 
 impl<T: Value> fmt::Debug for FnPredicate<T> {
