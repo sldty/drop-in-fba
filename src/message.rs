@@ -3,13 +3,14 @@ use crate::{
     node::NodeId,
     slot::SlotId,
     topic::Topic,
+    value::Value,
 };
 
 #[derive(Debug)]
-pub struct Message {
+pub struct Message<T: Value> {
     counter: usize,
     sender:  NodeId,
     slot_id: SlotId,
-    quorum:  Quorum,
-    topic:   Topic,
+    quorum:  Quorum<T>,
+    topic:   Topic<T>,
 }

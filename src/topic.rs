@@ -3,30 +3,42 @@ use std::{
     collections::HashSet
 };
 
+use crate::{ballot::Ballot, value::Value};
+
 /// A totally orderable [`Topic`], i.e. something to vote on.
 /// An enumeration that represents states in the state machine
 /// needed to reach concensus.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Topic {
-    Nominate(Nominate),
+pub enum Topic<T: Value> {
+    Nominate(Nominate<T>),
     // TODO: why does this even exist?
-    NominatePrepare(Nominate, Prepare),
-    Prepare(Prepare),
-    Commit(Commit),
-    Externalize(Externalize),
+    NominatePrepare(Nominate<T>, Prepare<T>),
+    Prepare(Prepare<T>),
+    Commit(Commit<T>),
+    Externalize(Externalize<T>),
 }
 
 // Nominate topic implementation
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Nominate {
-    nominated: HashSet<Value>,
+#[derive(Debug)]
+pub struct Nominate<T: Value> {
+    nominated: HashSet<T>,
     // 1. A _quorum_ votes-or-accepts the same value;
     // 2. A _blocking set_ accepts it.
-    accepted:  HashSet<Value>,
+    accepted:  HashSet<T>,
 }
 
-impl Ord for Nominate {
+// equality is length-based - we never actually compare the sets.
+impl<T: Value> PartialEq for Nominate<T> {
+    fn eq(&self, other: &Self) -> bool {
+          self.nominated.len() == other.nominated.len()
+        && self.accepted.len() == other.accepted.len()
+    }
+}
+
+impl<T: Value> Eq for Nominate<T> {}
+
+impl<T: Value> Ord for Nominate<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         // comapare two nominated ballots
         // one with more nominations win
@@ -42,22 +54,22 @@ impl Ord for Nominate {
 // Prepare topic implementation
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Prepare {
-    ballot:   Ballot,
-    prepared: Ballot,
+pub struct Prepare<T: Value> {
+    ballot:   Ballot<T>,
+    prepared: Ballot<T>,
     // PP: Ballot, // unused field?
     lowest:   usize, // highest number?
     highest:  usize, // current number?
 }
 
-impl Ord for Prepare {
+impl<T: Value> Ord for Prepare<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         // compare ballots first
-        match self.ballot.cmp(other.ballot) {
+        match self.ballot.cmp(&other.ballot) {
             Ordering::Equal => (),
             order           => { return order; }
         }
-        match self.prepared.cmp(other.prepared) {
+        match self.prepared.cmp(&other.prepared) {
             Ordering::Equal => (),
             order           => { return order; }
         }
@@ -70,17 +82,17 @@ impl Ord for Prepare {
 // Commit topic implementation
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Commit {
-    ballot:   Ballot,
+pub struct Commit<T: Value> {
+    ballot:   Ballot<T>,
     prepared: usize,
     lowest:   usize,
     highest:  usize,
 }
 
-impl Ord for Commit {
+impl<T: Value> Ord for Commit<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         // compare ballots first
-        match self.ballot.cmp(other.ballot) {
+        match self.ballot.cmp(&other.ballot) {
             Ordering::Equal => (),
             order           => { return order; }
         }
@@ -99,12 +111,12 @@ impl Ord for Commit {
 // Externalize topic implementation
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Externalize {
-    ballot:  Ballot,
+pub struct Externalize<T: Value> {
+    ballot:  Ballot<T>,
     highest: usize,
 }
 
-impl Ord for Externalize {
+impl<T: Value> Ord for Externalize<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         return self.highest.cmp(&other.highest);
     }
@@ -114,24 +126,25 @@ impl Ord for Externalize {
 
 // Partial ordering
 
-impl PartialOrd for Topic       { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
-impl PartialOrd for Nominate    { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
-impl PartialOrd for Prepare     { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
-impl PartialOrd for Commit      { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
-impl PartialOrd for Externalize { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
+impl<T: Value> PartialOrd for Topic      <T> { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
+impl<T: Value> PartialOrd for Nominate   <T> { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
+impl<T: Value> PartialOrd for Prepare    <T> { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
+impl<T: Value> PartialOrd for Commit     <T> { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
+impl<T: Value> PartialOrd for Externalize<T> { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }
 
 // Total ordering for topic
 
-impl Ord for Topic {
+impl<T: Value> Ord for Topic<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         use Topic::*;
 
         // number closure
-        let number = |&t| -> u8 {match t {
+        let number = |t: &Topic<T>| -> u8 {match t {
             Nominate(_)           => 0,
             NominatePrepare(_, _) => 1,
-            Commit(_)             => 2,
-            Externalize(_)        => 3,
+            Prepare(_)            => 2,
+            Commit(_)             => 3,
+            Externalize(_)        => 4,
         }};
 
         return match (self, other) {
