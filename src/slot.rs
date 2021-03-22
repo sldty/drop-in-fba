@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    node::NodeId,
+    node::{Node, NodeId},
     value::{self, Value},
     message::Message,
     // topic::Prepare,
@@ -12,7 +12,7 @@ use crate::{
     predicate::Predicate
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SlotId(usize);
 
 // TODO: some sort of message storage thing?
@@ -20,7 +20,7 @@ pub struct SlotId(usize);
 
 pub struct Slot<T: Value> {
     id:         SlotId,
-    node:       Node,
+    node:       Node<T>,
     phase:      Phase,
     messages:   HashMap<NodeId, Message<T>>,
     sent:       Option<Message<T>>,
@@ -77,7 +77,7 @@ pub enum Phase {
 }
 
 impl<T: Value> Slot<T> {
-    pub fn new(slot_id: SlotId, node: Node) -> Slot<T> {
+    pub fn new(slot_id: SlotId, node: Node<T>) -> Slot<T> {
         Slot {
             id:          slot_id,
             node:        node,

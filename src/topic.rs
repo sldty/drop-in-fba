@@ -116,8 +116,8 @@ impl<T: Value> Ord for Commit<T> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Externalize<T: Value> {
-    ballot:  Ballot<T>,
-    highest: usize,
+    pub ballot:  Ballot<T>,
+    pub highest: usize,
 }
 
 impl<T: Value> Ord for Externalize<T> {

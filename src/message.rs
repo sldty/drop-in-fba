@@ -8,9 +8,9 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Message<T: Value> {
-    counter:    usize,
-    pub sender: NodeId,
-    slot_id:    SlotId,
-    pub quorum: Quorum<T>,
-    pub topic:  Topic<T>,
+    counter:     usize,
+    pub sender:  NodeId,
+    pub slot_id: SlotId,
+    pub quorum:  Quorum<T>,
+    pub topic:   Topic<T>,
 }

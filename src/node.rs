@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use crate::{
     value::Value,
     quorum::Quorum,
-    slot::{Slot, SlotId}, topic,
+    slot::{Slot, SlotId},
+    topic::{self, Topic},
+    message::Message,
 };
 
 // TODO: make NodeId something unique, like a public key,
@@ -14,6 +16,11 @@ pub struct NodeId(String);
 
 // TODO: wrap in Rc or something with SlotId as weakref
 // because they both try to hold reference to each other
+// "But Isaac!" I hear you say, "Rc is *slow*"
+// "Not to worry" I console,
+// "We'll not use Rc and instead, idk, remove the backref from Slot
+// and have nodes be passed in as a function paramater."
+// (or something).
 
 // TODO: ok, so the original go implementation uses a separate goroutine
 // (basically like a thread that you can pass messages in and out of)
@@ -76,7 +83,35 @@ impl<T: Value> Node<T> {
         // }
     }
 
-    pub fn handle() {
+    // TODO: have the return result be our response.
+
+    pub fn handle(&mut self, message: &Message<T>) -> Result<(), ()> {
+        // we've already externalized the topic, so we don't need to do any more thinking
+        // (unless someone else messaged us they externalized the topic as well)
+        if let Some(externalized) = self.externalized.get(&message.slot_id) {
+            if let Topic::Externalize(e) = message.topic {
+                // the externalized value disagrees with what we think! oh no!
+                if externalized.ballot.value != e.ballot.value {
+                    eprintln!(
+                        "Ahh! Concensus failure! Inbound {:?} disagrees with own {:?}",
+                        e.ballot.value,
+                        externalized.ballot.value
+                    );
+                    // TODO: ok, so obviously there was a concensus failure.
+                    // but remember, the node that sent this message could be faulty or something
+                    // so in reality we should ignore the message, and add the faulty node
+                    // to a timeout, or something. We know concensus didn't actually fail.
+                    // but I guess in any event, concensus failure or conflict
+                    // is something hard to handle, so for now, a
+                    panic!()
+                    // will do.
+                }
+            } else {
+                // send our response, which is that we've externalized this topic already
+            }
+            return Ok(());
+        }
+
         todo!()
     }
 }
