@@ -5,6 +5,14 @@ use std::{
 };
 use crate::slot::SlotId;
 
+/// This is quite the supertrait.
+/// [`Value`] represents any arbitrary data that
+/// the network is trying to reach concensus on.
+/// In addition to all the traits the data must implement,
+/// it must implement [`Value::combine`]
+/// which must combine itself with another to form
+/// a new Value in a deterministic and communative manner.
+/// (e.g. taking the union of two sets, or using the older item).
 pub trait Value: Hash + Eq + Ord + fmt::Debug + Clone {
     fn combine(this: Self, that: Self, slot_id: SlotId) -> Self;
 }

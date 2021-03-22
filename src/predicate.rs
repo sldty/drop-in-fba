@@ -44,6 +44,17 @@ impl<T: Value> fmt::Debug for FnPredicate<T> {
 
 // Value set predicate
 
+/// A predicate that narrows down a set of values.
+/// Type paramater `T`, as always, is the type of the value.
+/// However, note the additional type paramater `S`,
+/// which is the type of the item of the set.
+/// There are two common sets used with the [`hashSetPredicate`]:
+/// 1. A [`Value`] set, in which case `T = S`.
+/// 2. A [`Ballot`] set, in which case `T != S`; `S = Ballot`.
+/// Note that, for instance, the [`HashSetPredicate`] for
+/// a [`Ballot`] set is written `HashSetPredicate<Value, Ballot<Value>>`
+/// and not `HashSetPredicate<Value, HashSet<Ballot<Value>>>`.
+/// The type paramater `S` should not be a `HashSet`.
 #[derive(Clone)]
 pub struct HashSetPredicate<T: Value, S: fmt::Debug + Clone> {
     values:       HashSet<S>,
