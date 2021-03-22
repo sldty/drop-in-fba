@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Debug, Clone, Copy)]
 pub struct SlotId(usize);
-/*
+
 // TODO: some sort of message storage thing?
 // TODO: simplify and break out
 
@@ -223,4 +223,3 @@ impl<T: Value> Slot<T> {
         }
     }
 }
-*/
