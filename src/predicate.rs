@@ -17,6 +17,7 @@ pub trait Predicate<T: Value>: fmt::Debug {
 
 // Function predicate
 
+#[derive(Clone)]
 pub struct FnPredicate<T: Value>(fn(&Message<T>) -> bool);
 
 impl<T: Value> Predicate<T> for FnPredicate<T> {
@@ -31,12 +32,6 @@ impl<T: Value> Predicate<T> for FnPredicate<T> {
     }
 
     fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
-}
-
-impl<T: Value> Clone for FnPredicate<T> {
-    fn clone(&self) -> Self {
-        FnPredicate(self.0)
-    }
 }
 
 impl<T: Value> fmt::Debug for FnPredicate<T> {
@@ -72,11 +67,7 @@ impl<T: Value, S: fmt::Debug + Clone> Predicate<T> for HashSetPredicate<T, S> {
         return Some(self);
     }
 
-    /// Like clone but for traits
-
-    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's {
-        Box::new(self.clone())
-    }
+    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
 }
 
 impl<T: Value, S: fmt::Debug + Clone> fmt::Debug for HashSetPredicate<T, S> {
@@ -85,6 +76,53 @@ impl<T: Value, S: fmt::Debug + Clone> fmt::Debug for HashSetPredicate<T, S> {
             .field("values",       &self.values)
             .field("final_values", &self.final_values)
             .field("function",     &format_args!("_"))
+            .finish()
+    }
+}
+
+// TODO: there's something funky going on with nil in this predicate and
+// the hash set predicate. (the final fields)
+// I need to investigate it.
+// TODO: remove final fields on these two predicates?
+
+// Min max predicate
+
+#[derive(Clone)]
+pub struct MinMaxPredicate<T: Value> {
+    min:       usize,
+    max:       usize,
+    final_min: usize,
+    final_max: usize,
+    function:  fn(&Message<T>, usize, usize) -> (bool, usize, usize),
+}
+
+impl<T: Value> Predicate<T> for MinMaxPredicate<T> {
+    fn test<'s>(mut self: Box<Self>, message: &Message<T>)
+        -> Option<Box<dyn Predicate<T> + 's>> where Self: 's
+    {
+        if self.min > self.max { return None; }
+
+        let (res, min, max) = (self.function)(message, self.min, self.max);
+        if !res { return None; }
+
+        self.min       = min;
+        self.max       = max;
+        self.final_min = min;
+        self.final_max = max;
+        return Some(self);
+    }
+
+    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
+}
+
+impl<T: Value> fmt::Debug for MinMaxPredicate<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MinMaxPredicate")
+            .field("min",       &self.min)
+            .field("max",       &self.max)
+            .field("final_min", &self.final_min)
+            .field("final_max", &self.final_max)
+            .field("function",  &format_args!("_"))
             .finish()
     }
 }

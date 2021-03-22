@@ -50,7 +50,7 @@ pub struct Slot<T: Value> {
 mod tests {
     use super::*;
 
-    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
     pub struct DummyValue(usize);
 
     impl Value for DummyValue {
@@ -189,7 +189,7 @@ impl<T: Value> Slot<T> {
     fn determine_quorum() {}
 
     fn find_quorum(&self, predicate: Box<dyn Predicate<T>>) -> HashSet<NodeId> {
-        self.node
+        return self.node.quorum.find_quorum(self.node.id, self.messages, predicate);
     }
 
     pub fn update_values(&mut self) {
