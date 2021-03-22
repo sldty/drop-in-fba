@@ -55,11 +55,11 @@ impl<T: Value> Ord for Nominate<T> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Prepare<T: Value> {
-    pub ballot:     Ballot<T>,
-    pub prepared_a: Ballot<T>,
-    pub prepared_b: Ballot<T>,
-    pub lowest:     usize, // highest number?
-    pub highest:    usize, // current number?
+    pub ballot:      Ballot<T>,
+    pub prepared_a:  Ballot<T>,
+    pub prepared_b:  Ballot<T>,
+    pub lowest:  usize, // highest number?
+    pub highest: usize, // current number?
 }
 
 impl<T: Value> Ord for Prepare<T> {

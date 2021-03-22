@@ -11,6 +11,12 @@ use crate::{
 };
 
 // TODO: quorum value type <T> where T: Value?
+// TODO: we're basically implementing a backtracking algorithm
+// but the problem is it makes a copy on each recursive call.
+// better solution would be to use a mutable datatype
+// with an 'undo' operation
+// that only stores the mutations
+// and can be called out into a full datatype upon backtracking completing.
 
 /// A [`Quorum`] set is a set of nodes/subsets (a [`Member`]), named `members`.
 /// A quorum slice is is a subset of a [`Quorum`] set,
@@ -29,6 +35,8 @@ pub enum Member<T: Value> {
     Node(NodeId),
     Quorum(Quorum<T>),
 }
+
+// TODO: find blocking and find quorum are very similar; refactor?
 
 impl<T: Value> Quorum<T> {
     fn needed(&self) -> usize {
@@ -66,33 +74,113 @@ impl<T: Value> Quorum<T> {
         // TODO: safe to unwrap?
         let (member, remaining) = members.split_first().unwrap();
 
-        if let Member::Node(n) = member {
-            if let Some(message) = messages.get(n) {
-                if let Some(new_predicate) = predicate.dupe().test(message) {
+        match member {
+            Member::Node(n) => {
+                if let Some(message) = messages.get(n) {
+                    if let Some(new_predicate) = predicate.dupe().test(message) {
+                        needed -= 1;
+                        predicate = new_predicate;
+                        so_far.insert(n.clone());
+                    }
+                }
+            },
+            Member::Quorum(q) => {
+                let (new_so_far, new_predicate) = Quorum::find_blocking_inner(
+                    q.needed(),
+                    &q.members,
+                    messages,
+                    predicate.dupe(),
+                    so_far.clone(),
+                );
+
+                // backtrack here, which is why we make a copy of predicate
+                if !new_so_far.is_empty() {
                     needed -= 1;
                     predicate = new_predicate;
-                    so_far.insert(n.clone());
+                    so_far = new_so_far;
                 }
-            }
-        } else if let Member::Quorum(q) = member {
-            let (new_so_far, new_predicate) = Quorum::find_blocking_inner(
-                q.needed(),
-                &q.members,
-                messages,
-                predicate.dupe(),
-                so_far.clone(),
-            );
-
-            // backtrack here, which is why we make a copy of predicate
-            if !new_so_far.is_empty() {
-                needed -= 1;
-                predicate = new_predicate;
-                so_far = new_so_far;
-            }
+            },
         }
 
         return Quorum::find_blocking_inner(
             needed,
+            remaining,
+            messages,
+            predicate,
+            so_far,
+        );
+    }
+
+    pub fn find_quorum<'a>(
+        &self,
+        node_id:   NodeId,
+        messages:  &HashMap<NodeId, Message<T>>,
+        predicate: Box<dyn Predicate<T> + 'a>,
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+        todo!()
+    }
+
+    pub fn find_quorum_inner<'a>(
+        mut threshold: usize,
+        members:       &[Member<T>],
+        messages:      &HashMap<NodeId, Message<T>>,
+        mut predicate: Box<dyn Predicate<T> + 'a>,
+        mut so_far:    HashSet<NodeId>,
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+        // base cases
+        if threshold == 0 { return (so_far, predicate); }
+        if threshold > members.len() { return (HashSet::new(), predicate); }
+
+        // TODO: safe to unwrap?
+        let (member, remaining) = members.split_first().unwrap();
+
+        match member {
+            // TODO: refactor this out.
+            // note that we basically call find_blocking_inner in both branches
+            Member::Node(n) => {
+                if so_far.contains(n) {
+                    threshold -= 1;
+                } else if let Some(message) = messages.get(n) {
+                    if let Some(new_predicate) = predicate.dupe().test(message) {
+                        let mut new_so_far = so_far.clone();
+                        new_so_far.insert(message.sender.clone());
+
+                        let (new_so_far, new_predicate) = Quorum::find_blocking_inner(
+                            message.quorum.needed(),
+                            &message.quorum.members,
+                            messages,
+                            predicate.dupe(),
+                            new_so_far,
+                        );
+
+                        if !new_so_far.is_empty() {
+                            threshold -= 1;
+                            predicate = new_predicate;
+                            so_far = new_so_far;
+                        }
+                    }
+                }
+            },
+            Member::Quorum(q) => {
+                let (new_so_far, new_predicate) = Quorum::find_quorum_inner(
+                    q.threshold,
+                    &q.members,
+                    messages,
+                    predicate.dupe(),
+                    so_far.clone(),
+                );
+
+                // backtrack here, which is why we make a copy of predicate
+                if !new_so_far.is_empty() {
+                    threshold -= 1;
+                    predicate = new_predicate;
+                    so_far = new_so_far;
+                }
+            }
+        }
+
+        return Quorum::find_quorum_inner(
+            threshold,
             remaining,
             messages,
             predicate,

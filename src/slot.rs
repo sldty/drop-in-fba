@@ -5,29 +5,36 @@ use std::{
 
 use crate::{
     node::NodeId,
-    value::Value,
+    value::{self, Value},
     message::Message,
-    topic::Prepare
+    // topic::Prepare,
+    ballot::Ballot,
+    predicate::Predicate
 };
 
 #[derive(Debug, Clone, Copy)]
 pub struct SlotId(usize);
-
+/*
 // TODO: some sort of message storage thing?
 // TODO: simplify and break out
 
 pub struct Slot<T: Value> {
     id:         SlotId,
-    validator:  usize,
+    node:       Node,
     phase:      Phase,
     messages:   HashMap<NodeId, Message<T>>,
-    sent:       Message<T>,
+    sent:       Option<Message<T>>,
 
     created:   time::Instant,
     nominated: HashSet<T>,
     accepted:  HashSet<T>,
     confirmed: HashSet<T>,
-    prepared:  Option<Prepare<T>>,
+
+    ballot:     Ballot<T>,
+    prepared_a: Ballot<T>,
+    prepared_b: Ballot<T>,
+    highest:    Ballot<T>,
+    lowest:     Ballot<T>,
 
     // what is the point of these priority peers?
     // are they like the quorum slice of this node?
@@ -73,7 +80,7 @@ impl<T: Value> Slot<T> {
     pub fn new(slot_id: SlotId, node: Node) -> Slot<T> {
         Slot {
             id:          slot_id,
-            validator:   node,
+            node:        node,
             phase:       Phase::Nominate,
             messages:    HashMap::new(),
             sent:        None,
@@ -82,12 +89,17 @@ impl<T: Value> Slot<T> {
             nominated: HashSet::new(),
             accepted:  HashSet::new(),
             confirmed: HashSet::new(),
-            prepared:  None,
+
+            ballot: (),
+            prepared_a: (),
+            prepared_b: (),
+            highest: (),
+            lowest: (),
 
             priority_peers: HashSet::new(),
             priority_round: 1,
             priority_timer: todo!(),
-        }
+        };
 
         todo!()
     }
@@ -120,6 +132,7 @@ impl<T: Value> Slot<T> {
         if self.phase == Phase::Commit
             { self.commit();}
 
+        // haiku:
         // I trust the quorum,
         // and count the votes I have seen.
         // We reach concensus.
@@ -148,6 +161,7 @@ impl<T: Value> Slot<T> {
         if self.phase == Phase::Nominate {
             if self.confirmed.is_empty() {
                 self.update_prepare();
+                todo!()
                 // if self.prepare.is_zero() { return; }
             }
 
@@ -156,17 +170,57 @@ impl<T: Value> Slot<T> {
         }
     }
 
+    // TODO: simplify
     pub fn update_ballot(&mut self) {
-        if self.phase >= Phase::Commit { return; }
+        if self.phase >= Phase::Commit { panic!(); }
 
-        if let Some(prepared) = self.prepared {
-            prepared.highest
-        }
-
-        if self.confirmed.is_empty() {
-            self.ballot.
+        if !self.highest.is_zero() {
+            self.ballot.value = self.highest.value;
+        } else if !self.confirmed.is_empty() {
+            // TODO: is unwrap ok here?
+            self.ballot.value = value::combine(self.accepted, self.slot_id).unwrap();
+        } else if !self.prepared_a.is_zero() {
+            self.ballot.value = self.prepared_a.value;
         }
 
         todo!()
     }
+
+    fn determine_quorum() {}
+
+    fn find_quorum(&self, predicate: Box<dyn Predicate<T>>) -> HashSet<NodeId> {
+        self.node
+    }
+
+    pub fn update_values(&mut self) {
+        // move values from nominated to accepted
+
+        let mut to_promote = HashSet::new();
+        let node_ids = self.accept(Slot::<T>::determine_quorum);
+
+        // TODO: is this check redundant?
+        if !node_ids.is_empty() {
+            for value in to_promote.drain() {
+                self.accepted.insert(value);
+            }
+        }
+
+        for value in self.nominated.iter() {
+            if self.accepted.contains(value) {
+                self.nominated.remove(value);
+            }
+        }
+
+        // move values from accepted to confirmed
+        let to_promote = HashSet::new();
+        let node_ids = self.find_quorum(todo!());
+
+        // TODO: is this check redundant?
+        if !node_ids.is_empty() {
+            for value in to_promote.drain() {
+                self.confirmed.insert(value);
+            }
+        }
+    }
 }
+*/

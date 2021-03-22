@@ -4,8 +4,8 @@ use crate::value::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Ballot<T: Value> {
-    number: usize,
-    value:  T,
+    pub number: usize,
+    pub value:  T,
 }
 
 impl<T: Value> PartialOrd for Ballot<T> { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) } }

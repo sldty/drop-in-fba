@@ -1,10 +1,11 @@
 use std::{
     fmt,
     collections::HashSet,
+    hash::Hash,
 };
 use crate::slot::SlotId;
 
-pub trait Value: Eq + Ord + fmt::Debug + Clone {
+pub trait Value: Hash + Eq + Ord + fmt::Debug + Clone {
     fn combine(this: Self, that: Self, slot_id: SlotId) -> Self;
 }
 
