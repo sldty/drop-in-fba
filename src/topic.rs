@@ -22,10 +22,10 @@ pub enum Topic<T: Value> {
 
 #[derive(Debug)]
 pub struct Nominate<T: Value> {
-    nominated: HashSet<T>,
+    pub nominated: HashSet<T>,
     // 1. A _quorum_ votes-or-accepts the same value;
     // 2. A _blocking set_ accepts it.
-    accepted:  HashSet<T>,
+    pub accepted:  HashSet<T>,
 }
 
 // equality is length-based - we never actually compare the sets.
@@ -87,10 +87,10 @@ impl<T: Value> Ord for Prepare<T> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Commit<T: Value> {
-    ballot:   Ballot<T>,
-    prepared: usize,
-    lowest:   usize,
-    highest:  usize,
+    pub ballot:   Ballot<T>,
+    pub prepared: usize,
+    pub lowest:   usize,
+    pub highest:  usize,
 }
 
 impl<T: Value> Ord for Commit<T> {

@@ -99,17 +99,10 @@ impl<T: Value> Node<T> {
                         e.ballot.value,
                         externalized.ballot.value
                     );
-                    // TODO: ok, so obviously there was a concensus failure.
-                    // but remember, the node that sent this message could be faulty or something
-                    // so in reality we should ignore the message, and add the faulty node
-                    // to a timeout, or something. We know concensus didn't actually fail.
-                    // but I guess in any event, concensus failure or conflict
-                    // is something hard to handle, so for now, a
-                    panic!()
-                    // will do.
+                    panic!();
                 }
             } else {
-                // send our response, which is that we've externalized this topic already
+                return Message::new()
             }
             return Ok(());
         }
