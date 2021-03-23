@@ -58,8 +58,8 @@ pub struct Prepare<T: Value> {
     pub ballot:      Ballot<T>,
     pub prepared_a:  Ballot<T>,
     pub prepared_b:  Ballot<T>,
-    pub lowest:  usize, // highest number?
     pub highest: usize, // current number?
+    pub lowest:  usize, // highest number?
 }
 
 impl<T: Value> Ord for Prepare<T> {
@@ -89,8 +89,8 @@ impl<T: Value> Ord for Prepare<T> {
 pub struct Commit<T: Value> {
     pub ballot:   Ballot<T>,
     pub prepared: usize,
-    pub lowest:   usize,
     pub highest:  usize,
+    pub lowest:   usize,
 }
 
 impl<T: Value> Ord for Commit<T> {

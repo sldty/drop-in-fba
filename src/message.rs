@@ -48,7 +48,7 @@ impl<T: Value> Message<T> {
         return if t.lowest > t.highest { Err(()) } else { Ok(()) };
     }
 
-    pub fn is_valid(&self) -> Result<(), ()> {
+    pub fn valid(&self) -> Result<(), ()> {
         return match self.topic {
             Topic::Nominate(n) => Message::nominate_valid(&n),
             Topic::NominatePrepare(n, p) => {

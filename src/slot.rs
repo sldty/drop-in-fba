@@ -9,7 +9,8 @@ use crate::{
     message::Message,
     // topic::Prepare,
     ballot::Ballot,
-    predicate::Predicate
+    predicate::Predicate,
+    topic::{self, Topic}
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -38,6 +39,7 @@ pub struct Slot<T: Value> {
 
     // what is the point of these priority peers?
     // are they like the quorum slice of this node?
+    // they are not, hmmm...
 
     priority_peers: HashSet<NodeId>,
     priority_round: usize,
@@ -104,9 +106,54 @@ impl<T: Value> Slot<T> {
         todo!()
     }
 
-    pub fn handle(&mut self, message: Message<T>) -> Result<Option<Message<T>>, ()> {
-        // TODO: nomination phase
 
+    // TODO: simplify building out Topics
+
+    pub fn build_message(&self) -> Option<Message<T>> {
+        let topic = match self.phase {
+            Phase::Nominate => {
+                if self.nominated.is_empty() && self.accepted.is_empty() { return None; }
+                Topic::Nominate(topic::Nominate {
+                    nominated: self.nominated,
+                    accepted:  self.accepted,
+                })
+            },
+            Phase::NominatePrepare => Topic::NominatePrepare(
+                topic::Nominate { nominated: self.nominated, accepted: self.accepted },
+                topic::Prepare {
+                    ballot:     self.ballot,
+                    prepared_a: self.prepared_a,
+                    prepared_b: self.prepared_b,
+                    highest:    self.highest.number,
+                    lowest:     self.lowest.number,
+                },
+            ),
+            Phase::Prepare => Topic::Prepare(topic::Prepare {
+                ballot:     self.ballot,
+                prepared_a: self.prepared_a,
+                prepared_b: self.prepared_b,
+                highest:    self.highest.number,
+                lowest:     self.lowest.number,
+            }),
+            Phase::Commit => Topic::Commit(topic::Commit {
+                ballot:   self.ballot,
+                prepared: self.prepared_a.number,
+                highest:  self.highest.number,
+                lowest:   self.lowest.number,
+            }),
+            Phase::Externalize => Topic::Externalize(topic::Externalize {
+                ballot:  self.lowest,
+                highest: self.highest.number,
+            }),
+        };
+
+        let mut message = Message::new(self.node.id, self.id, self.node.quorum, topic, todo!());
+    }
+
+    pub fn handle(&mut self, message: Message<T>) -> Result<Option<Message<T>>, ()> {
+        // TODO: handle self messages
+
+        // check message validity
         message.valid()?;
 
         // make sure this is the most up-to-date message
@@ -189,7 +236,7 @@ impl<T: Value> Slot<T> {
     fn determine_quorum() {}
 
     fn find_quorum(&self, predicate: Box<dyn Predicate<T>>) -> HashSet<NodeId> {
-        return self.node.quorum.find_quorum(self.node.id, self.messages, predicate);
+        return self.node.quorum.find_quorum(self.node.id, &self.messages, predicate).0;
     }
 
     pub fn update_values(&mut self) {

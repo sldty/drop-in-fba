@@ -22,23 +22,11 @@ pub struct NodeId(String);
 // and have nodes be passed in as a function paramater."
 // (or something).
 
-// TODO: ok, so the original go implementation uses a separate goroutine
-// (basically like a thread that you can pass messages in and out of)
-// but the issue with this is that Rust doesn't have Goroutines
-// (or rustroutines, for that manner)
-// Now, I could be a simp and use Tokio
-// but then everyone who uses this would have to pull in tokio.
-// I'm not sure, but I think that just implementing Send+Sync
-// and then allow people to bring-your-own-runtime it (Tokio included).
-// but I need to finish implementing slot first.
-
 pub struct Node<T: Value> {
-    id:           NodeId,
-    quorum:       Quorum<T>,
+    pub id:       NodeId,
+    pub quorum:   Quorum<T>,
     pending:      HashMap<SlotId, Slot<T>>,
     externalized: HashMap<SlotId, topic::Externalize<T>>,
-
-    // TODO: channel field for sending messages.
 
     /// A fraction from 0/255 (never) to 255/255 (always) that represents
     /// the chance of a message being ignored. Used for testing.
@@ -102,9 +90,15 @@ impl<T: Value> Node<T> {
                     panic!();
                 }
             } else {
-                return Message::new()
+                return Ok(Some(Message::new(
+                    self.id,
+                    message.slot_id,
+                    self.quorum,
+                    Topic::Externalize(*externalized),
+                    todo!(),
+                )));
             }
-            return Ok(());
+            return Ok(None);
         }
 
         // create a new slot if we haven't already
