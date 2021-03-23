@@ -84,8 +84,10 @@ impl<T: Value> Node<T> {
     }
 
     // TODO: have the return result be our response.
+    // TODO: clean up logic around externalized messages.
 
-    pub fn handle(&mut self, message: &Message<T>) -> Result<(), ()> {
+    /// Handles a message, optionally returning a response.
+    pub fn handle(&mut self, message: &Message<T>) -> Result<Option<Message<T>>, ()> {
         // we've already externalized the topic, so we don't need to do any more thinking
         // (unless someone else messaged us they externalized the topic as well)
         if let Some(externalized) = self.externalized.get(&message.slot_id) {
@@ -112,6 +114,25 @@ impl<T: Value> Node<T> {
             return Ok(());
         }
 
-        todo!()
+        // create a new slot if we haven't already
+        let slot = match self.pending.get_mut(&message.slot_id) {
+            Some(s) => s,
+            None => {
+                let slot = Slot::new(message.slot_id, self);
+                self.pending.insert(message.slot_id, slot);
+                slot
+            },
+        };
+
+        // run concensus and handle the message
+        let outbound = slot.handle(message)?;
+
+        // if the slot was externalized, move it to the externalized set
+        if let Some(Topic::Externalize(e)) = outbound.topic {
+            self.externalized.insert(slot.id, e);
+            self.pending.remove(slot.id);
+        }
+
+        return outbound;
     }
 }
