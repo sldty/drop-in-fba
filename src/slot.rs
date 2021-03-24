@@ -9,7 +9,7 @@ use crate::{
     message::Message,
     // topic::Prepare,
     ballot::Ballot,
-    predicate::Predicate,
+    predicate::{self, Predicate},
     topic::{self, Topic}
 };
 
@@ -92,11 +92,11 @@ impl<T: Value> Slot<T> {
             accepted:  HashSet::new(),
             confirmed: HashSet::new(),
 
-            ballot: (),
-            prepared_a: (),
-            prepared_b: (),
-            highest: (),
-            lowest: (),
+            ballot: todo!(),
+            prepared_a: todo!(),
+            prepared_b: todo!(),
+            highest: todo!(),
+            lowest: todo!(),
 
             priority_peers: HashSet::new(),
             priority_round: 1,
@@ -105,7 +105,6 @@ impl<T: Value> Slot<T> {
 
         todo!()
     }
-
 
     // TODO: simplify building out Topics
 
@@ -207,7 +206,7 @@ impl<T: Value> Slot<T> {
         // we move on to the prepare phase.
         if self.phase == Phase::Nominate {
             if self.confirmed.is_empty() {
-                self.update_prepare();
+                self.update_prepared();
                 todo!()
                 // if self.prepare.is_zero() { return; }
             }
@@ -225,7 +224,7 @@ impl<T: Value> Slot<T> {
             self.ballot.value = self.highest.value;
         } else if !self.confirmed.is_empty() {
             // TODO: is unwrap ok here?
-            self.ballot.value = value::combine(self.accepted, self.slot_id).unwrap();
+            self.ballot.value = value::combine(self.accepted, &self.id).unwrap();
         } else if !self.prepared_a.is_zero() {
             self.ballot.value = self.prepared_a.value;
         }
@@ -233,17 +232,55 @@ impl<T: Value> Slot<T> {
         todo!()
     }
 
-    fn determine_quorum() {}
+    fn find_blocking<'a>(&self, predicate: Box<dyn Predicate<T> + 'a>) -> HashSet<NodeId> {
+        return self.node.quorum.find_blocking(&self.messages, predicate).0;
+    }
 
-    fn find_quorum(&self, predicate: Box<dyn Predicate<T>>) -> HashSet<NodeId> {
+    fn find_quorum<'a>(&self, predicate: Box<dyn Predicate<T> + 'a>) -> HashSet<NodeId> {
         return self.node.quorum.find_quorum(self.node.id, &self.messages, predicate).0;
+    }
+
+    // TODO: just pass in two predicates?
+    fn accept<'a>(&self, f: &dyn Fn(bool) -> Box<dyn Predicate<T> + 'a>) -> HashSet<NodeId> {
+        // if this slot's node already accepts the predicate we're done
+        let predicate = f(false);
+        if let Some(message) = self.sent {
+            if let Some(_) = predicate.test(&message) {
+                let mut accepting = HashSet::new();
+                accepting.insert(self.node.id);
+                return accepting;
+            }
+        }
+
+        // if there is a blocking set that accepts we accept
+        let blocking = self.find_blocking(predicate);
+        if !blocking.is_empty() { return blocking; }
+
+        // if there quorum that votes or accepts we accept
+        let vote_predicate = f(true);
+        if let Some(message) = self.sent {
+            if let Some(_) = vote_predicate.test(&message) {
+                return self.find_quorum(vote_predicate);
+            }
+        }
+
+        // nobody accepts :(
+        return HashSet::new();
     }
 
     pub fn update_values(&mut self) {
         // move values from nominated to accepted
 
         let mut to_promote = HashSet::new();
-        let node_ids = self.accept(Slot::<T>::determine_quorum);
+        let node_ids = self.accept(&|is_quorum| {
+            Box::new(predicate::HashSetPredicate {
+                values:       self.nominated,
+                final_values: &mut to_promote,
+                function:     |message, values| {
+                    
+                },
+            })
+        });
 
         // TODO: is this check redundant?
         if !node_ids.is_empty() {

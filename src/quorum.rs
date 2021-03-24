@@ -21,7 +21,7 @@ use crate::{
 /// A [`Quorum`] set is a set of nodes/subsets (a [`Member`]), named `members`.
 /// A quorum slice is is a subset of a [`Quorum`] set,
 /// With at least `threshold` number of `members`.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Quorum<T: Value> {
     threshold:      usize,
     members:        Vec<Member<T>>,
@@ -30,7 +30,7 @@ pub struct Quorum<T: Value> {
 
 /// A Member is either a [`Node`] (referenced by a [`NodeId`]),
 /// or a nested [`Quorum`] set.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Member<T: Value> {
     Node(NodeId),
     Quorum(Quorum<T>),

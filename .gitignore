@@ -1,2 +1,10 @@
 /target
 Cargo.lock
+
+# Hidden files
+**/.*
+
+# But not:
+!.gitignore
+!.git
+!.github

@@ -6,7 +6,7 @@ use crate::{
     value::Value,
 };
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Message<T: Value> {
     counter:     usize,
     pub sender:  NodeId,

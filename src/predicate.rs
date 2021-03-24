@@ -56,9 +56,9 @@ impl<T: Value> fmt::Debug for FnPredicate<T> {
 /// and not `HashSetPredicate<Value, HashSet<Ballot<Value>>>`.
 /// The type paramater `S` should not be a `HashSet`.
 #[derive(Clone)]
-pub struct HashSetPredicate<T: Value, S: fmt::Debug + Clone> {
+pub struct HashSetPredicate<'a, T: Value, S: fmt::Debug + Clone> {
     values:       HashSet<S>,
-    final_values: HashSet<S>,
+    final_values: &'a mut HashSet<S>,
     // TODO: fnmut?
     function:     fn(&Message<T>, &HashSet<S>) -> HashSet<S>,
 }
@@ -95,6 +95,15 @@ impl<T: Value, S: fmt::Debug + Clone> fmt::Debug for HashSetPredicate<T, S> {
 // the hash set predicate. (the final fields)
 // I need to investigate it.
 // TODO: remove final fields on these two predicates?
+// Okok, so I figured out what the final fields are for
+// basically, when we apply a predicate, we make the final fields a mutable reference
+// to a value accessible outside the predicate. One problemo: we can't do this in Rust
+// because it violates the only one mutable reference rules.
+// uhh, this is no bueno.
+// TODO: how do we get the final values out of the predicate?
+// one option is to implement a destructive function that reduces a predicate to it's final values
+// that might work, actually.
+// imma commit really quick in case everything goes wrong.
 
 // Min max predicate
 
