@@ -7,7 +7,7 @@ use crate::slot::SlotId;
 
 /// This is quite the supertrait.
 /// [`Value`] represents any arbitrary data that
-/// the network is trying to reach concensus on.
+/// the network is trying to reach consensus on.
 /// In addition to all the traits the data must implement,
 /// it must implement [`Value::combine`]
 /// which must combine itself with another to form

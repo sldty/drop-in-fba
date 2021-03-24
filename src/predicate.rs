@@ -9,10 +9,14 @@ use crate::{
 
 /// A predicate is a condition we use to build up and narrow down stuff.
 pub trait Predicate<T: Value>: fmt::Debug {
+    type Final;
+
     fn test<'s>(self: Box<Self>, message: &Message<T>)
-        -> Option<Box<dyn Predicate<T> + 's>> where Self: 's;
+        -> Option<Box<dyn Predicate<T, Final=Self::Final> + 's>> where Self: 's;
+    /// Extract the final values from a predicate if applicable
+    fn build_final(self) -> Self::Final;
     /// Like clone but for traits
-    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's;
+    fn dupe<'s>(&self) -> Box<dyn Predicate<T, Final=Self::Final> + 's> where Self: 's;
 }
 
 // Function predicate
@@ -21,8 +25,10 @@ pub trait Predicate<T: Value>: fmt::Debug {
 pub struct FnPredicate<T: Value>(fn(&Message<T>) -> bool);
 
 impl<T: Value> Predicate<T> for FnPredicate<T> {
+    type Final = ();
+
     fn test<'s>(self: Box<Self>, message: &Message<T>)
-        -> Option<Box<dyn Predicate<T> + 's>> where Self: 's
+        -> Option<Box<dyn Predicate<T, Final=Self::Final> + 's>> where Self: 's
     {
         return if (self.0)(message) {
             Some(self)
@@ -31,7 +37,8 @@ impl<T: Value> Predicate<T> for FnPredicate<T> {
         }
     }
 
-    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
+    fn build_final(self) -> Self::Final { () }
+    fn dupe<'s>(&self) -> Box<dyn Predicate<T, Final=Self::Final> + 's> where Self: 's { Box::new(self.clone()) }
 }
 
 impl<T: Value> fmt::Debug for FnPredicate<T> {
@@ -56,16 +63,18 @@ impl<T: Value> fmt::Debug for FnPredicate<T> {
 /// and not `HashSetPredicate<Value, HashSet<Ballot<Value>>>`.
 /// The type paramater `S` should not be a `HashSet`.
 #[derive(Clone)]
-pub struct HashSetPredicate<'a, T: Value, S: fmt::Debug + Clone> {
+pub struct HashSetPredicate<T: Value, S: fmt::Debug + Clone> {
     values:       HashSet<S>,
-    final_values: &'a mut HashSet<S>,
+    final_values: HashSet<S>,
     // TODO: fnmut?
     function:     fn(&Message<T>, &HashSet<S>) -> HashSet<S>,
 }
 
 impl<T: Value, S: fmt::Debug + Clone> Predicate<T> for HashSetPredicate<T, S> {
+    type Final = HashSet<S>;
+
     fn test<'s>(mut self: Box<Self>, message: &Message<T>)
-        -> Option<Box<dyn Predicate<T> + 's>> where Self: 's
+        -> Option<Box<dyn Predicate<T, Final=Self::Final> + 's>> where Self: 's
     {
         if self.values.is_empty() { return None; }
         let next_values = (self.function)(message, &self.values);
@@ -78,7 +87,8 @@ impl<T: Value, S: fmt::Debug + Clone> Predicate<T> for HashSetPredicate<T, S> {
         return Some(self);
     }
 
-    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
+    fn build_final(self) -> Self::Final { return self.final_values; }
+    fn dupe<'s>(&self) -> Box<dyn Predicate<T, Final=Self::Final> + 's> where Self: 's { Box::new(self.clone()) }
 }
 
 impl<T: Value, S: fmt::Debug + Clone> fmt::Debug for HashSetPredicate<T, S> {
@@ -116,9 +126,19 @@ pub struct MinMaxPredicate<T: Value> {
     function:  fn(&Message<T>, usize, usize) -> (bool, usize, usize),
 }
 
+impl<T: Value> MinMaxPredicate<T> {
+    pub fn new(
+        function: fn(&Message<T>, usize, usize) -> (bool, usize, usize)
+    ) -> MinMaxPredicate<T> {
+        
+    }
+}
+
 impl<T: Value> Predicate<T> for MinMaxPredicate<T> {
+    type Final = (usize, usize);
+
     fn test<'s>(mut self: Box<Self>, message: &Message<T>)
-        -> Option<Box<dyn Predicate<T> + 's>> where Self: 's
+        -> Option<Box<dyn Predicate<T, Final=Self::Final> + 's>> where Self: 's
     {
         if self.min > self.max { return None; }
 
@@ -132,7 +152,8 @@ impl<T: Value> Predicate<T> for MinMaxPredicate<T> {
         return Some(self);
     }
 
-    fn dupe<'s>(&self) -> Box<dyn Predicate<T> + 's> where Self: 's { Box::new(self.clone()) }
+    fn build_final(self) -> Self::Final { (self.final_min, self.final_max) }
+    fn dupe<'s>(&self) -> Box<dyn Predicate<T, Final=Self::Final> + 's> where Self: 's { Box::new(self.clone()) }
 }
 
 impl<T: Value> fmt::Debug for MinMaxPredicate<T> {

@@ -83,7 +83,7 @@ impl<T: Value> Node<T> {
                 // the externalized value disagrees with what we think! oh no!
                 if externalized.ballot.value != e.ballot.value {
                     eprintln!(
-                        "Ahh! Concensus failure! Inbound {:?} disagrees with own {:?}",
+                        "Ahh! consensus failure! Inbound {:?} disagrees with own {:?}",
                         e.ballot.value,
                         externalized.ballot.value
                     );
@@ -111,7 +111,7 @@ impl<T: Value> Node<T> {
             },
         };
 
-        // run concensus and handle the message
+        // run consensus and handle the message
         let outbound = slot.handle(message)?;
 
         // if the slot was externalized, move it to the externalized set

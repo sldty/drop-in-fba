@@ -181,7 +181,7 @@ impl<T: Value> Slot<T> {
         // haiku:
         // I trust the quorum,
         // and count the votes I have seen.
-        // We reach concensus.
+        // We reach consensus.
 
         let new_message = match self.build_message() {
             m @ Some(_) if m == self.sent => None,
@@ -232,55 +232,73 @@ impl<T: Value> Slot<T> {
         todo!()
     }
 
-    fn find_blocking<'a>(&self, predicate: Box<dyn Predicate<T> + 'a>) -> HashSet<NodeId> {
-        return self.node.quorum.find_blocking(&self.messages, predicate).0;
+    fn find_blocking<'a, F>(
+        &self, predicate: Box<dyn Predicate<T, Final=F> + 'a>
+    ) -> (HashSet<NodeId>, F) {
+        let (blocking, new_predicate) = self.node.quorum.find_blocking(&self.messages, predicate);
+        return (blocking, new_predicate.build_final());
     }
 
-    fn find_quorum<'a>(&self, predicate: Box<dyn Predicate<T> + 'a>) -> HashSet<NodeId> {
-        return self.node.quorum.find_quorum(self.node.id, &self.messages, predicate).0;
+    fn find_quorum<'a, F>(
+        &self, predicate: Box<dyn Predicate<T, Final=F> + 'a>
+    ) -> (HashSet<NodeId>, F) {
+        let (quorum, new_predicate) = self.node.quorum.find_quorum(self.node.id, &self.messages, predicate);
+        return (quorum, new_predicate.build_final());
     }
 
     // TODO: just pass in two predicates?
-    fn accept<'a>(&self, f: &dyn Fn(bool) -> Box<dyn Predicate<T> + 'a>) -> HashSet<NodeId> {
+    fn accept<'a, F>(
+        &self,
+        predicate:        Box<dyn Predicate<T, Final=F> + 'a>,
+        quorum_predicate: Box<dyn Predicate<T, Final=F> + 'a>,
+    ) -> (HashSet<NodeId>, F) {
         // if this slot's node already accepts the predicate we're done
-        let predicate = f(false);
         if let Some(message) = self.sent {
             if let Some(_) = predicate.test(&message) {
                 let mut accepting = HashSet::new();
                 accepting.insert(self.node.id);
-                return accepting;
+                return (accepting, predicate.build_final());
             }
         }
 
         // if there is a blocking set that accepts we accept
-        let blocking = self.find_blocking(predicate);
-        if !blocking.is_empty() { return blocking; }
+        let (blocking, final_value) = self.find_blocking(predicate);
+        if !blocking.is_empty() { return (blocking, final_value); }
 
         // if there quorum that votes or accepts we accept
-        let vote_predicate = f(true);
         if let Some(message) = self.sent {
-            if let Some(_) = vote_predicate.test(&message) {
-                return self.find_quorum(vote_predicate);
+            if let Some(_) = quorum_predicate.test(&message) {
+                return self.find_quorum(quorum_predicate);
             }
         }
 
         // nobody accepts :(
-        return HashSet::new();
+        return (HashSet::new(), predicate.build_final());
     }
 
     pub fn update_values(&mut self) {
         // move values from nominated to accepted
 
-        let mut to_promote = HashSet::new();
-        let node_ids = self.accept(&|is_quorum| {
+        let (node_ids, to_promote) = self.accept(
             Box::new(predicate::HashSetPredicate {
                 values:       self.nominated,
-                final_values: &mut to_promote,
-                function:     |message, values| {
-                    
+                final_values: HashSet::new(),
+                function: |message, values| {
+                    values.intersection(message.accept_nominated_set())
+                        .map(|v| v.to_owned())
+                        .collect::<HashSet<T>>()
                 },
-            })
-        });
+            }),
+            Box::new(predicate::HashSetPredicate {
+                values:       self.nominated,
+                final_values: HashSet::new(),
+                function: |message, values| {
+                    values.intersection(message.vote_or_accept_nominated_set())
+                        .map(|v| v.to_owned())
+                        .collect::<HashSet<T>>()
+                },
+            }),
+        );
 
         // TODO: is this check redundant?
         if !node_ids.is_empty() {
@@ -296,8 +314,7 @@ impl<T: Value> Slot<T> {
         }
 
         // move values from accepted to confirmed
-        let to_promote = HashSet::new();
-        let node_ids = self.find_quorum(todo!());
+        let (node_ids, to_promote) = self.find_quorum(todo!());
 
         // TODO: is this check redundant?
         if !node_ids.is_empty() {

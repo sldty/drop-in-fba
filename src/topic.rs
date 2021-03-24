@@ -7,7 +7,7 @@ use crate::{ballot::Ballot, value::Value};
 
 /// A totally orderable [`Topic`], i.e. something to vote on.
 /// An enumeration that represents states in the state machine
-/// needed to reach concensus.
+/// needed to reach consensus.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Topic<T: Value> {
     Nominate(Nominate<T>),

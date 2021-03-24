@@ -30,9 +30,9 @@ Right now, there are generally two ways we solve this problem:
 
 These aren't the only solutions, however.
 
-**Federated Byzantine Agreement (FBA)** generalizes Byzantine Agreement to distributed systems. We can have our cake and eat it too: FBA is as quick as a PAXOS-like system, but allows for open-membership and is completely decentralized. FBA is efficient because it doesn't assume zero trust - rather, computers in the network choose a *subset* of all computers in the network to trust (a *Quorum Slice*), and by taking the transitive closure over this *Quorum Slice* with respect to a specific computer, we can generate a trusted subset of the network a *Quorum*, through which we can undergo fairly standard PAXOS-style voting to arrive at a shared state.
+**Federated Byzantine Agreement (FBA)** generalizes Byzantine Agreement to distributed systems. We can have our cake and eat it too: FBA is as quick as a PAXOS-like system, but allows for open-membership and is completely decentralized. FBA is efficient because it doesn't assume zero trust - rather, computers in the network choose a *subset* of all computers in the network to trust (a *Quorum Slice*), and by taking the transitive closure over this *Quorum Slice* with respect to a specific computer, we can generate a trusted subset of the network (a *Quorum*) through which we can undergo fairly standard PAXOS-style voting to arrive at a shared state.
 
-The **Stellar Consensus Protocol (SCP)²** is a specific construction that fulfills FBA. If I were to write an analogy, SCP is to FBA as PAXOS is to BA. For proof that SCP works, look no further than [Stellar](https://stellar.org), a distributed transactions system.
+The **Stellar Consensus Protocol (SCP)²** is a specific construction that fulfills FBA. If I were to write an analogy, SCP is to FBA as PAXOS is to BA. For proof that SCP works in practice, look no further than [Stellar](https://stellar.org), a distributed transactions system.
 
 > **2:** No, no, not *that* SCP.
 

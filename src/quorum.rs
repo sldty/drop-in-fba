@@ -43,11 +43,11 @@ impl<T: Value> Quorum<T> {
         return 1 + (self.members.len() - self.threshold);
     }
 
-    pub fn find_blocking<'a>(
+    pub fn find_blocking<'a, F>(
         &self,
         messages:  &HashMap<NodeId, Message<T>>,
-        predicate: Box<dyn Predicate<T> + 'a>,
-    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+        predicate: Box<dyn Predicate<T, Final=F> + 'a>,
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T, Final=F> + 'a>) where T: 'a {
         return Quorum::find_blocking_inner(
             self.needed(),
             &self.members,
@@ -60,13 +60,13 @@ impl<T: Value> Quorum<T> {
     // TODO: remove unnessary clones, dupes, and boxing
     // would also have to change the Predicate trait
 
-    fn find_blocking_inner<'a>(
+    fn find_blocking_inner<'a, F>(
         mut needed:    usize,
         members:       &[Member<T>],
         messages:      &HashMap<NodeId, Message<T>>,
-        mut predicate: Box<dyn Predicate<T> + 'a>,
+        mut predicate: Box<dyn Predicate<T, Final=F> + 'a>,
         mut so_far:    HashSet<NodeId>,
-    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T, Final=F> + 'a>) where T: 'a {
         // base cases
         if needed == 0 { return (so_far, predicate) }
         if needed > members.len() { return (HashSet::new(), predicate) }
@@ -111,22 +111,22 @@ impl<T: Value> Quorum<T> {
         );
     }
 
-    pub fn find_quorum<'a>(
+    pub fn find_quorum<'a, F>(
         &self,
         node_id:   NodeId,
         messages:  &HashMap<NodeId, Message<T>>,
-        predicate: Box<dyn Predicate<T> + 'a>,
-    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+        predicate: Box<dyn Predicate<T, Final=F> + 'a>,
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T, Final=F> + 'a>) where T: 'a {
         todo!()
     }
 
-    pub fn find_quorum_inner<'a>(
+    pub fn find_quorum_inner<'a, F>(
         mut threshold: usize,
         members:       &[Member<T>],
         messages:      &HashMap<NodeId, Message<T>>,
-        mut predicate: Box<dyn Predicate<T> + 'a>,
+        mut predicate: Box<dyn Predicate<T, Final=F> + 'a>,
         mut so_far:    HashSet<NodeId>,
-    ) -> (HashSet<NodeId>, Box<dyn Predicate<T> + 'a>) where T: 'a {
+    ) -> (HashSet<NodeId>, Box<dyn Predicate<T, Final=F> + 'a>) where T: 'a {
         // base cases
         if threshold == 0 { return (so_far, predicate); }
         if threshold > members.len() { return (HashSet::new(), predicate); }

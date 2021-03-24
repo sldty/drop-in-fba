@@ -4,6 +4,9 @@ Cargo.lock
 # Hidden files
 **/.*
 
+# It's a secret!
+GUIDE.md
+
 # But not:
 !.gitignore
 !.git
